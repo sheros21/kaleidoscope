@@ -78,11 +78,54 @@ static int gettok(){
     return ThisChar; // [][] not sure the point of this?
 }
 
-int main(){
-    while(true){
-        int tok = gettok();
-        std::cout << "got token: " << tok << std::endl;
-    }
+// int main(){
+//     while(true){
+//         int tok = gettok();
+//         std::cout << "got token: " << tok << std::endl;
+//     }
 
-}
+// }
+
+
+/*
+ * Parser Phase
+ */
+
+// all AST node classes will inherit from base parent AST node class
+class ExprAST {
+public:
+    virtual ~ExprAST(); // removed the original = default line to remove exception specification
+    /*
+    Remove the exception specification from the base 
+    class destructor to allow more flexibility in derived classes.  
+    Since this might be suitable if there is no intention to rely on exception specifications
+    for class design
+    */
+};
+
+class NumberExprAST : public ExprAST {
+  double Val;
+
+public:
+  NumberExprAST(double Val) : Val(Val) {}
+};
+
+class VariableExprAST : public ExprAST {
+    std::string Name;
+
+    public:
+        VariableExprAST(const std::string &Name) : Name(Name){}
+};
+
+class BinaryExprAST : public ExprAST {
+    char Op; // operators: + - * / < >
+    std::unique_ptr<ExprAST> LHS, RHS;
+
+    public:
+        BinaryExprAST(
+            char Op, 
+            std::unique_ptr<ExprAST> LHS,
+            std::unique_ptr<ExprAST> RHS
+        ) : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+};
 

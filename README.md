@@ -1,2 +1,2 @@
-# llvm-kaleidoscope
-Follow through of the LLVM kaleidoscope tutorial
+# kaleidoscope
+Follow through of kaleidoscope tutorial

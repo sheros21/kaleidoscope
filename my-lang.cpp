@@ -1,5 +1,10 @@
 #include <string>
 #include <iostream>
+#include <vector>
+
+
+// Forward declare the ExprAST class
+class ExprAST;
 
 // definition for possible language token types
 enum Token {
@@ -126,6 +131,16 @@ class BinaryExprAST : public ExprAST {
             char Op, 
             std::unique_ptr<ExprAST> LHS,
             std::unique_ptr<ExprAST> RHS
+            // move operation is transfering ownership of LHS from outside this class to inside this class
         ) : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+};
+
+class CallExprAST : public ExprAST {
+  std::string Callee;
+  std::vector<std::unique_ptr<ExprAST> > Args;
+
+public:
+  CallExprAST(const std::string &Callee, std::vector<std::unique_ptr<ExprAST> > Args)
+    : Callee(Callee), Args(std::move(Args)) {}
 };
 

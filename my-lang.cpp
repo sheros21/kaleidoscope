@@ -223,7 +223,7 @@ static std::unique_ptr<ExprAST> ParseIdentifierorCallExpr(){
     getNextToken(); // eat identifier
 
     // if there is a '(' after an identifier then there is a function call
-    // [] difference between function argument and parameter?
+    // [][] TODO difference between function argument and parameter?
     if(CurTok == '('){ 
         getNextToken(); // eat ()
         std::vector<std::unique_ptr<ExprAST> > Args;
@@ -269,3 +269,88 @@ static std:: unique_ptr<ExprAST> ParserPrimary(){
             return LogError("unknown token when expecting an expresion");
     }
 }
+
+// binary expression parsing
+// ex. a + b * c can look at the expression as: 
+// operator precedence: a + ( b * c )
+// or non precedence: ( a + b ) * c
+
+// this parser uses shunting yard algorithm for operater precedence 
+// shunting yard: convert infix expression to postfix using stacks for operator
+
+// static std::map<char, int> BinopPrecedence;
+// get the precedence of the current binary operator token
+static int GetTokPrecedence(){
+    if(!isascii(CurTok)){
+        return -1;
+    }
+
+    // make sure that it's a valid declared binary operator 
+    int TokPrec = BinopPrecedence[CurTok];
+    if (TokPrec <= 0){
+        return -1;
+    }
+    return TokPrec;
+    // define precedence through switch statement (can use map)
+
+    switch(CurTok){
+        case '<':
+        case '>':
+            return 10;
+        case '+':
+        case '-':  
+            return 20;
+        case '*':
+        case '/':
+            return 40;
+        default:
+            return 1;
+    }
+}
+
+static std::unique_ptr<ExprAST> ParseExpression(){
+    auto LHS = ParserPrimary();
+    if(LHS){
+        return ParseBinOpRHS(0, std::move(LHS));
+    }
+
+    return nullptr;
+}
+
+static std::unique_ptr<ExprAST> ParseBinOpRHS(
+    int ExprPrec,
+    std::unique_ptr<ExprAST> LHS
+    ) {
+    // if this is a binary opreator, get it's precedence first
+    while(true){
+        int TokPrec = GetTokPrecedence();
+        if (TokPrec < ExprPrec){
+            return LHS;
+        }  
+        // if it doesn't return, then we know that the next token is the targeted token
+        else {
+            int BinOp = CurTok; 
+            getNextToken(); // eat binop
+            auto RHS = ParserPrimary();
+            // look ahead again to the right in case the next operater has even higher precedence
+            // ex. a + b * c
+            // if a and b are already parsed, the operator after b needs to be examined before executing expression
+            if(RHS) {
+                int NextPrec = GetTokPrecedence();
+                if(TokPrec < NextPrec) {
+                    RHS = ParseBinOpRHS(TokPrec+1, std::move(RHS));
+                    if(!RHS){
+                        return nullptr;
+                    }
+                }
+                // [][] TODO here?
+                LHS = std::make_unique<BinaryExprAST>(BinOp, std::move(LHS),std::move(RHS));
+                // if the precendence on the the right is greater, then current left and right hand side are grouped together
+                // and they become the new left hand side
+            } else{
+               return nullptr;
+            }
+        }
+    }
+}
+

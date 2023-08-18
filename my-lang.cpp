@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <memory> // make unique
 
 
 // Forward declare the ExprAST class
@@ -144,3 +145,110 @@ public:
     : Callee(Callee), Args(std::move(Args)) {}
 };
 
+/// PrototypeAST - This class represents the "prototype" for a function,
+/// which captures its name, and its argument names (thus implicitly the number
+/// of arguments the function takes).
+class PrototypeAST {
+  std::string Name;
+  std::vector<std::string> Args;
+
+public:
+  PrototypeAST(const std::string &Name, std::vector<std::string> Args)
+    : Name(Name), Args(std::move(Args)) {}
+
+  const std::string &getName() const { return Name; }
+};
+
+/// FunctionAST - This class represents a function definition itself.
+class FunctionAST {
+  std::unique_ptr<PrototypeAST> Proto;
+  std::unique_ptr<ExprAST> Body;
+
+public:
+  FunctionAST(std::unique_ptr<PrototypeAST> Proto,
+              std::unique_ptr<ExprAST> Body)
+    : Proto(std::move(Proto)), Body(std::move(Body)) {}
+};
+
+// recursive decsent parser
+// syntax or rdp: symbol points to the 
+static int CurTok; // save the current token to make it avaliable to the parser
+
+static int getNextToken(){
+    return CurTok = gettok();
+}
+
+std::unique_ptr<ExprAST> LogError(const char *Str){
+    fprintf(stderr, "LogError: %s\n", Str);
+    return nullptr;
+}
+
+// log parsering string specific error
+std::unique_ptr<PrototypeAST> LogerrorP(const char *Str){
+    LogError(Str);
+    return nullptr;
+}
+
+static std::unique_ptr<ExprAST> ParseNumberExpr(){
+    auto Result = std::make_unique<NumberExprAST>(NumVal); //create new unique ptr 
+    getNextToken(); // expects the token to have already been parsed and seen taht it is a number
+    return std::move(Result);
+    // move the ownership of the ownership out of the smart poiter out of the function
+    // so that ownership falls on who calls the ParseNumberExpr function
+}
+
+static std::unique_ptr<ExprAST> ParseParenExpr(){
+    getNextToken(); // eat '('
+    // 'eat' refers to changing the value of the current token to the next
+    // functional parsing takes a different approach to it
+    auto V = ParseExpression();
+    if (!V) {
+        return nullptr;
+    }
+
+    if(CurTok == ')'){
+        getNextToken(); // eat )
+        return V;
+    }
+    else{
+        return LogError("expected ')'");
+        return nullptr;
+    }
+}
+
+
+static std::unique_ptr<ExprAST> ParseIdentifierorCallExpr(){
+    std::string IdName = IdentifierStr;
+
+    getNextToken(); // eat identifier
+
+    // if there is a '(' after an identifier then there is a function call
+    // [] difference between function argument and parameter?
+    if(CurTok == '('){ 
+        getNextToken(); // eat ()
+        std::vector<std::unique_ptr<ExprAST> > Args;
+        while(true){
+            auto Arg = ParseExpression();
+            if(Arg) {
+                Args.push_back(Arg);
+            } else{
+                return nullptr;
+            }
+
+            if(CurTok == ')'){
+                getNextToken(); // eat )
+                break;
+            } else if (CurTok == ','){
+                getNextToken(); // eat ,
+                continue;
+            }
+            else{
+                return LogError("Expected ')' or ',' in argument list");
+            }
+        }
+        return std::make_unique<CallExprAST>(IdName, std::move(Args));
+    }
+    else{
+        return std::make_unique<VariableExprAst>(IdName);
+    }
+}

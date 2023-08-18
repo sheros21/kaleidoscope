@@ -1,2 +1,2 @@
 # kaleidoscope
-Follow through of kaleidoscope tutorial
+implementation of kaleidoscope language

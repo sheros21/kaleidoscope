@@ -441,9 +441,6 @@ static std::unique_ptr<FunctionAST> ParseTopLevelExpr(){
     return nullptr;
 }
 
-
-
-
 // top level parsing
 static void HandleDefinition() {
   if (ParseDefinition()) {

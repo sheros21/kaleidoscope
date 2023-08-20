@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory> // make unique
 #include <map>  
+#include <cctype> 
+#include <cstdio>
 
 
 // Forward declare the ExprAST class
@@ -118,6 +120,7 @@ class VariableExprAST : public ExprAST {
     public:
         VariableExprAST(const std::string &Name) : Name(Name){}
 };
+
 
 class BinaryExprAST : public ExprAST {
     char Op; // operators: + - * / < >
